@@ -1,0 +1,63 @@
+# Build the redistributable package and attach it to the GitHub release.
+#
+# Trigger: publishing a release (create the tag first, e.g. `v0.1.0`), or
+# manually via "Run workflow" (the package is then uploaded as a workflow
+# artifact instead of a release asset).
+#
+# The build compiles this project's plugin and shims, downloads the pinned
+# third-party packages (sha256-verified) and packages the result: no Unity
+# files and no game files are fetched here or redistributed. The Unity
+# player runtime is downloaded by the end user on first run
+# (scripts/fetch-unity.sh). See README.md and PORT-CHANGES.md.
+
+name: release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install build dependencies (X11/GL headers for the shims)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libx11-dev libgl-dev
+
+      - name: Build
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="$(cat VERSION)-$(git rev-parse --short HEAD)"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          # VERSION as a make argument: the Makefile's own assignment from
+          # the VERSION file would override an environment variable.
+          ./build.sh package VERSION="$VERSION"
+
+      - name: Upload to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+
+      - name: Upload as workflow artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: de-linux-mod-${{ env.VERSION }}
+          path: dist/*

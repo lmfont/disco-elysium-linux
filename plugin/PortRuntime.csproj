@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Runtime patch plugin (loader/plugins/PortRuntime.dll). Compiled for
+       .NET Framework 4.5 (mscorlib 4.0.0.0, which the Unity Mono runtime
+       provides). The game assemblies are resolved by name at runtime, so no
+       game or Unity player files are needed here. -->
+  <PropertyGroup>
+    <TargetFramework>net45</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>PortRuntime</AssemblyName>
+    <RootNamespace>DiscoLinuxPort</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DebugType>none</DebugType>
+    <Deterministic>true</Deterministic>
+    <!-- Pins the whole package graph (versions and content hashes) in
+         packages.lock.json; the build script restores in locked mode. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!-- The build script passes the VERSION file through -p:Version. -->
+    <Version Condition="'$(Version)' == ''">$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../VERSION').Trim())</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="PortRuntime.cs" />
+    <Compile Include="PortGfxInfo.cs" />
+    <Compile Include="patches/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Compile-only UnityEngine API surface (a package published by BepInEx
+         on its feed; not on nuget.org). -->
+    <PackageReference Include="UnityEngine" Version="5.6.1" IncludeAssets="compile" />
+    <!-- .NET Framework reference assemblies for building on Linux. Referenced
+         explicitly so the version is pinned by the lock file instead of
+         following the installed SDK. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The loader assemblies this release ships with; installed under
+         loader/core/ by scripts/fetch-vendor.sh (bepinex scope). -->
+    <Reference Include="BepInEx">
+      <HintPath>$(MSBuildThisFileDirectory)../loader/core/BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(MSBuildThisFileDirectory)../loader/core/0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MonoMod.Utils">
+      <HintPath>$(MSBuildThisFileDirectory)../loader/core/MonoMod.Utils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MonoMod.RuntimeDetour">
+      <HintPath>$(MSBuildThisFileDirectory)../loader/core/MonoMod.RuntimeDetour.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- The plugin version is compiled in from the Version property. -->
+  <Target Name="GeneratePortVersionSource" BeforeTargets="BeforeCompile">
+    <WriteLinesToFile File="$(IntermediateOutputPath)PortVersion.g.cs" Overwrite="true"
+                      Lines="namespace DiscoLinuxPort { internal static class PortVersion { public const string Value = &quot;$(Version)&quot;%3B } }" />
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)PortVersion.g.cs" />
+      <FileWrites Include="$(IntermediateOutputPath)PortVersion.g.cs" />
+    </ItemGroup>
+  </Target>
+
+</Project>

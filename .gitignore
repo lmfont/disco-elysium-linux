@@ -1,0 +1,30 @@
+# Downloaded Unity player files (fetched from Unity's CDN on first run)
+unity/
+
+# Built loader (BepInEx core + plugins), built by build.sh
+loader/
+libdoorstop.so
+
+# Built native shims
+shims/*.so
+shims/at2/build/
+shims/at2/vendor/
+shims/at2/libAmplifyTextureNative.so
+
+# Built plugin (the SDK build's output and intermediate directories)
+plugin/bin/
+plugin/obj/
+
+# Generated at run time (the overlay)
+game-overlay/
+Disco Elysium.x86_64
+UnityPlayer.so
+Disco Elysium_Data/
+.game-dir
+port.log
+
+# Python bytecode (scripts/pkg-extract.py)
+__pycache__/
+
+# Release packages
+dist/
