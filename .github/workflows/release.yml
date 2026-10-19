@@ -39,12 +39,26 @@ jobs:
 
       - name: Build
         run: |
+          BASE_VERSION="$(cat VERSION)"
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
+            ARTIFACT_VERSION="$VERSION"
           else
-            VERSION="$(cat VERSION)-$(git rev-parse --short HEAD)"
+            # Keep the plugin/package version numeric. BepInEx parses the
+            # BepInPlugin version as a System.Version, so a "-<sha>" suffix
+            # makes it skip the plugin. The label is only for the test artifact.
+            VERSION="$BASE_VERSION"
+            ARTIFACT_VERSION="${VERSION}-$(git rev-parse --short HEAD)"
           fi
+
+          # BepInEx accepts 2-4 numeric components (for example 0.1.0).
+          if [[ ! "$VERSION" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]]; then
+            echo "::error::VERSION '$VERSION' is not a valid BepInEx/System.Version value; release tags must look like v0.1.0" >&2
+            exit 1
+          fi
+
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "ARTIFACT_VERSION=$ARTIFACT_VERSION" >> "$GITHUB_ENV"
           # VERSION as a make argument: the Makefile's own assignment from
           # the VERSION file would override an environment variable.
           ./build.sh package VERSION="$VERSION"
@@ -59,5 +73,5 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          name: de-linux-mod-${{ env.VERSION }}
+          name: de-linux-mod-${{ env.ARTIFACT_VERSION }}
           path: dist/*
