@@ -1,4 +1,4 @@
-# de-linux-mod — run Disco Elysium (Windows Mono build) on Linux
+# Run Disco Elysium (Windows Mono build) on Linux
 
 A runtime loader that runs the GOG/Steam **2022 Mono build** of Disco Elysium
 - The Final Cut (Unity 2020.3.12f1) on Linux. It uses a generic Unity Linux
@@ -55,7 +55,7 @@ in this project or in its release packages.
 
 ```
 git clone <this repository>
-cd de-linux-mod
+cd disco-elysium-linux
 ./build.sh            # build everything that is missing (idempotent)
 ./build.sh package    # release package -> dist/de-linux-mod-<version>.tar.gz
 ```
